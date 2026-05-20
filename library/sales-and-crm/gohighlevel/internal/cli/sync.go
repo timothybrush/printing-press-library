@@ -1311,7 +1311,7 @@ var genericIDFieldFallbacks = []string{"id", "ID", "gid", "sid", "uid", "uuid", 
 // {"Items": [...]} envelopes fall through to the ambiguity scan and a
 // single-array sibling miscount silently truncates sync.
 var pageItemKeys = []string{
-	"data", "results", "items", "records", "nodes", "entries",
+	"contacts", "data", "results", "items", "records", "nodes", "entries",
 	"Data", "Results", "Items", "Records", "Nodes", "Entries",
 }
 
@@ -1391,7 +1391,7 @@ func deriveContactsTagsFromPage(db *store.Store, items []json.RawMessage) error 
 			if !ok || tag == "" {
 				continue
 			}
-			compositeID := contactID + ":" + tag
+			compositeID := contactID + "\x00" + tag
 			row := map[string]any{
 				"id":          compositeID,
 				"contacts_id": contactID,
