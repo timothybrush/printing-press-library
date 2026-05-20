@@ -2075,6 +2075,27 @@
       }
     },
     {
+      "name": "pvgis",
+      "category": "other",
+      "api": "Pvgis",
+      "description": "The free, single-binary PVGIS CLI — JRC solar-radiation and PV-yield estimates with offline cache, multi-site...",
+      "path": "library/other/pvgis",
+      "printer": "robertobissanti",
+      "printer_name": "Roberto Bissanti",
+      "mcp": {
+        "binary": "pvgis-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 5,
+        "public_tool_count": 5,
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "pypi",
       "category": "developer-tools",
       "api": "PyPI",
