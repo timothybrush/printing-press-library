@@ -55,3 +55,32 @@ func TestDeriveContactsTagsFromPage_ReportsAllUpsertFailures(t *testing.T) {
 		}
 	}
 }
+
+func TestDeriveContactsTagsFromPage_UsesPrintableEscapedCompositeID(t *testing.T) {
+	db, err := store.Open(filepath.Join(t.TempDir(), "data.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer db.Close()
+
+	err = deriveContactsTagsFromPage(db, []json.RawMessage{
+		json.RawMessage(`{"id":"contact-1","dateUpdated":"2026-05-20T00:00:00Z","tags":["vip:top"]}`),
+	})
+	if err != nil {
+		t.Fatalf("deriveContactsTagsFromPage: %v", err)
+	}
+
+	var id, tag string
+	if err := db.DB().QueryRow(`SELECT "id", "tag" FROM "contacts_tags" WHERE "contacts_id" = ?`, "contact-1").Scan(&id, &tag); err != nil {
+		t.Fatalf("query contacts_tags: %v", err)
+	}
+	if id != "contact-1:vip%3Atop" {
+		t.Fatalf("id = %q, want printable escaped composite id", id)
+	}
+	if strings.ContainsRune(id, '\x00') {
+		t.Fatalf("id %q contains a null byte", id)
+	}
+	if tag != "vip:top" {
+		t.Fatalf("tag = %q, want original tag", tag)
+	}
+}

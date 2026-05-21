@@ -462,9 +462,9 @@ func TestUpsertBatch_PopulatesContactsTagsTable(t *testing.T) {
 	defer s.Close()
 
 	items := []json.RawMessage{
-		json.RawMessage(`{"id": "test-001", "contacts_id": "test-parent-001"}`),
-		json.RawMessage(`{"id": "test-002", "contacts_id": "test-parent-001"}`),
-		json.RawMessage(`{"id": "test-003", "contacts_id": "test-parent-001"}`),
+		json.RawMessage(`{"id": "test-001", "contacts_id": "test-parent-001", "tag": "hot-lead"}`),
+		json.RawMessage(`{"id": "test-002", "contacts_id": "test-parent-001", "tag": "vip"}`),
+		json.RawMessage(`{"id": "test-003", "contacts_id": "test-parent-001", "tag": "hot-lead"}`),
 	}
 	if _, _, err := s.UpsertBatch("contacts_tags", items); err != nil {
 		t.Fatalf("UpsertBatch: %v", err)
@@ -487,6 +487,14 @@ func TestUpsertBatch_PopulatesContactsTagsTable(t *testing.T) {
 	}
 	if typed != len(items) {
 		t.Fatalf("contacts_tags count = %d, want %d (typed table not populated by UpsertBatch)", typed, len(items))
+	}
+
+	var hotLeads int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM "contacts_tags" WHERE "tag" = ? AND "contacts_id" = ?`, "hot-lead", "test-parent-001").Scan(&hotLeads); err != nil {
+		t.Fatalf("count contacts_tags by tag: %v", err)
+	}
+	if hotLeads != 2 {
+		t.Fatalf("contacts_tags hot-lead count = %d, want 2", hotLeads)
 	}
 }
 

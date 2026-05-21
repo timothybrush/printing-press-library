@@ -1359,8 +1359,9 @@ func extractID(resource string, obj map[string]any) string {
 // contacts_tags row per (contactId, tag) pair. PATCH(amend-2026-05-20:
 // contacts + tags sync) — GHL's API does NOT expose per-tag-application
 // timestamps; we use the contact's dateUpdated as a coarse tagged_at
-// proxy and emit a synthetic id field "<contactId>:<tag>" so the row
-// upserts idempotently. The row's JSON blob is shaped to match what the
+// proxy and emit a printable synthetic id field
+// "<contactId>:<url-query-escaped-tag>" so the row upserts idempotently.
+// The row's JSON blob is shaped to match what the
 // store's UpsertContactsTags expects (id + contacts_id + the original
 // tag string + a tagged_at hint), so downstream SQL queries can answer
 // "what tags are on contact X" and "when were contact X's tags last
@@ -1393,7 +1394,7 @@ func deriveContactsTagsFromPage(db *store.Store, items []json.RawMessage) error 
 			if !ok || tag == "" {
 				continue
 			}
-			compositeID := contactID + "\x00" + tag
+			compositeID := contactID + ":" + url.QueryEscape(tag)
 			row := map[string]any{
 				"id":          compositeID,
 				"contacts_id": contactID,

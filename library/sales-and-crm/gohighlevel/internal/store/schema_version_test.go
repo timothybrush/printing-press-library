@@ -629,12 +629,16 @@ func TestMigrate_AddsColumnsOnUpgrade_ContactsTags(t *testing.T) {
 		t.Fatalf("open raw: %v", err)
 	}
 	if _, err := raw.Exec(`CREATE TABLE "contacts_tags" (
-		id TEXT PRIMARY KEY,
-		data JSON NOT NULL,
-		synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	)`); err != nil {
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`); err != nil {
 		raw.Close()
 		t.Fatalf("create old table: %v", err)
+	}
+	if _, err := raw.Exec(`INSERT INTO "contacts_tags" (id, data) VALUES (?, ?)`, "contact-1:vip", `{"contacts_id":"contact-1","tag":"vip"}`); err != nil {
+		raw.Close()
+		t.Fatalf("seed old table: %v", err)
 	}
 	raw.Close()
 
@@ -670,10 +674,24 @@ func TestMigrate_AddsColumnsOnUpgrade_ContactsTags(t *testing.T) {
 
 	for _, want := range []string{
 		"contacts_id",
+		"tag",
 	} {
 		if !hasColumn[want] {
 			t.Fatalf("%s column missing from contacts_tags after migrate", want)
 		}
+	}
+
+	var tag string
+	if err := s.DB().QueryRow(`SELECT "tag" FROM "contacts_tags" WHERE "id" = ?`, "contact-1:vip").Scan(&tag); err != nil {
+		t.Fatalf("query backfilled tag: %v", err)
+	}
+	if tag != "vip" {
+		t.Fatalf("backfilled tag = %q, want vip", tag)
+	}
+
+	var indexName string
+	if err := s.DB().QueryRow(`SELECT name FROM sqlite_master WHERE type = 'index' AND name = ?`, "idx_contacts_tags_tag_contacts_id").Scan(&indexName); err != nil {
+		t.Fatalf("query contacts_tags tag index: %v", err)
 	}
 }
 

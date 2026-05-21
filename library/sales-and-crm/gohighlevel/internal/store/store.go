@@ -41,7 +41,7 @@ func IsUUID(s string) bool {
 // shape — adding columns, dropping indexes, changing FTS5 tokenizers —
 // so an older binary refuses to open a newer database rather than silently
 // producing wrong results against a schema it cannot read.
-const StoreSchemaVersion = 2
+const StoreSchemaVersion = 3
 
 const resourcesFTSCreateSQL = `CREATE VIRTUAL TABLE IF NOT EXISTS resources_fts USING fts5(
 	id, resource_type, content, tokenize='porter unicode61'
@@ -218,6 +218,7 @@ func (s *Store) backfillColumns(ctx context.Context, conn *sql.Conn) error {
 		{table: "free_slots", column: "calendars_id", decl: "TEXT"},
 		{table: "notes", column: "contacts_id", decl: "TEXT"},
 		{table: "contacts_tags", column: "contacts_id", decl: "TEXT"},
+		{table: "contacts_tags", column: "tag", decl: "TEXT NOT NULL DEFAULT ''"},
 		{table: "tasks", column: "contacts_id", decl: "TEXT"},
 		{table: "workflow", column: "contacts_id", decl: "TEXT"},
 		{table: "messages", column: "conversations_id", decl: "TEXT"},
@@ -293,10 +294,12 @@ func (s *Store) migrate(ctx context.Context) error {
 		`CREATE TABLE IF NOT EXISTS "contacts_tags" (
 			"id" TEXT PRIMARY KEY,
 			"contacts_id" TEXT NOT NULL,
+			"tag" TEXT NOT NULL,
 			"data" JSON NOT NULL,
 			"synced_at" DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE INDEX IF NOT EXISTS "idx_contacts_tags_contacts_id" ON "contacts_tags"("contacts_id")`,
+		`CREATE INDEX IF NOT EXISTS "idx_contacts_tags_tag_contacts_id" ON "contacts_tags"("tag", "contacts_id")`,
 		`CREATE TABLE IF NOT EXISTS "tasks" (
 			"id" TEXT PRIMARY KEY,
 			"contacts_id" TEXT NOT NULL,
@@ -386,6 +389,9 @@ func (s *Store) migrate(ctx context.Context) error {
 			if _, err := conn.ExecContext(ctx, m); err != nil {
 				return fmt.Errorf("migration failed: %w", err)
 			}
+		}
+		if _, err := conn.ExecContext(ctx, `UPDATE "contacts_tags" SET "tag" = json_extract("data", '$.tag') WHERE "tag" = '' AND json_extract("data", '$.tag') IS NOT NULL`); err != nil {
+			return fmt.Errorf("backfilling contacts_tags.tag: %w", err)
 		}
 		// Stamp the schema version. On a fresh DB this writes the current
 		// StoreSchemaVersion; on an already-stamped DB this is a no-op
@@ -924,11 +930,12 @@ func (s *Store) UpsertNotes(data json.RawMessage) error {
 // opening a per-item transaction.
 func (s *Store) upsertContactsTagsTx(tx *sql.Tx, id string, obj map[string]any, data json.RawMessage) error {
 	if _, err := tx.Exec(
-		`INSERT INTO "contacts_tags" ("id", "contacts_id", "data", "synced_at")
-		 VALUES (?, ?, ?, ?)
-		 ON CONFLICT("id") DO UPDATE SET "contacts_id" = excluded."contacts_id", "data" = excluded."data", "synced_at" = excluded."synced_at"`,
+		`INSERT INTO "contacts_tags" ("id", "contacts_id", "tag", "data", "synced_at")
+		 VALUES (?, ?, ?, ?, ?)
+		 ON CONFLICT("id") DO UPDATE SET "contacts_id" = excluded."contacts_id", "tag" = excluded."tag", "data" = excluded."data", "synced_at" = excluded."synced_at"`,
 		id,
 		lookupFieldValue(obj, "contacts_id"),
+		lookupFieldValue(obj, "tag"),
 		string(data),
 		time.Now(),
 	); err != nil {
