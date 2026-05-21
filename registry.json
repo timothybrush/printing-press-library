@@ -1144,6 +1144,29 @@
       }
     },
     {
+      "name": "gohighlevel",
+      "category": "sales-and-crm",
+      "api": "Gohighlevel",
+      "description": "The terminal for GoHighLevel. Bulk ops, dedup, and pipeline reports in seconds — local cache, agent-native JSON,...",
+      "path": "library/sales-and-crm/gohighlevel",
+      "printer": "jenwilliams-eng",
+      "printer_name": "Jen Williams",
+      "mcp": {
+        "binary": "gohighlevel-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 57,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "GHL_PIT_TOKEN"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "google-ads",
       "category": "marketing",
       "api": "Google Ads",
