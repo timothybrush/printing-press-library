@@ -73,6 +73,7 @@ type followupItem struct {
 	Timezone            string            `json:"timezone,omitempty"`
 	MeetingURL          string            `json:"meeting_url,omitempty"`
 	Questions           []bookingQuestion `json:"questions,omitempty"`
+	Payment             map[string]any    `json:"payment,omitempty"`
 	SuggestedReason     string            `json:"suggested_reason"`
 	SuggestedNextAction string            `json:"suggested_next_action"`
 }
@@ -406,6 +407,9 @@ func resolveWorkflowWindow(dateExpr, fromExpr, toExpr string, loc *time.Location
 	}
 	start := dayStart(from, loc)
 	end := dayStart(to, loc)
+	if end.Before(start) {
+		return tidycalWindow{}, fmt.Errorf("--to %q resolves to a date before --from %q; the range appears to be reversed", toExpr, fromExpr)
+	}
 	if toExpr != fromExpr {
 		end = end.AddDate(0, 0, 1)
 	}
@@ -730,7 +734,7 @@ func buildFollowups(bookings []workflowBooking) []followupItem {
 				reason = "intake_answer_mentions_followup"
 			}
 		}
-		items = append(items, followupItem{BookingID: b.ID, ContactName: b.ContactName, ContactEmail: b.ContactEmail, BookingTypeID: b.BookingTypeID, StartsAt: b.StartsAt, EndsAt: b.EndsAt, Timezone: b.Timezone, MeetingURL: b.MeetingURL, Questions: b.Questions, SuggestedReason: reason, SuggestedNextAction: "Draft a follow-up note; do not send automatically."})
+		items = append(items, followupItem{BookingID: b.ID, ContactName: b.ContactName, ContactEmail: b.ContactEmail, BookingTypeID: b.BookingTypeID, StartsAt: b.StartsAt, EndsAt: b.EndsAt, Timezone: b.Timezone, MeetingURL: b.MeetingURL, Questions: b.Questions, Payment: b.Payment, SuggestedReason: reason, SuggestedNextAction: "Draft a follow-up note; do not send automatically."})
 	}
 	return items
 }

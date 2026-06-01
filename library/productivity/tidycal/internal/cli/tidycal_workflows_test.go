@@ -3,6 +3,7 @@
 package cli
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -31,6 +32,18 @@ func TestWorkflowWindowToDateIsLastIncludedDate(t *testing.T) {
 	window := workflowWindow(start, end)
 	if window.ToDate != "2026-06-01" {
 		t.Fatalf("ToDate = %q, want last included date", window.ToDate)
+	}
+}
+
+func TestResolveWorkflowWindowRejectsReversedRange(t *testing.T) {
+	loc := time.UTC
+
+	_, err := resolveWorkflowWindow("", "2026-06-05", "2026-06-02", loc)
+	if err == nil {
+		t.Fatal("resolveWorkflowWindow returned nil error for reversed range")
+	}
+	if !strings.Contains(err.Error(), "before --from") {
+		t.Fatalf("error = %q, want before --from", err)
 	}
 }
 
@@ -66,6 +79,29 @@ func TestBuildFollowupsKeepsCancelledReasonAheadOfIntakeAnswer(t *testing.T) {
 	}
 	if got[0].SuggestedReason != "cancelled_booking" {
 		t.Fatalf("SuggestedReason = %q, want cancelled_booking", got[0].SuggestedReason)
+	}
+}
+
+func TestBuildFollowupsCarriesPaymentContext(t *testing.T) {
+	got := buildFollowups([]workflowBooking{
+		{
+			ID:         "paid-missing-location",
+			MeetingURL: "",
+			Payment: map[string]any{
+				"payment_id": "pay_123",
+				"status":     "paid",
+			},
+		},
+	})
+
+	if len(got) != 1 {
+		t.Fatalf("followups len = %d, want 1", len(got))
+	}
+	if got[0].SuggestedReason != "missing_meeting_url" {
+		t.Fatalf("SuggestedReason = %q, want missing_meeting_url", got[0].SuggestedReason)
+	}
+	if got[0].Payment["payment_id"] != "pay_123" {
+		t.Fatalf("Payment = %+v, want payment_id pay_123", got[0].Payment)
 	}
 }
 
