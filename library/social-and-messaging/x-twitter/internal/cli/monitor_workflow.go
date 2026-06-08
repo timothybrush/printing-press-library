@@ -296,6 +296,7 @@ func runMonitor(cmd *cobra.Command, flags *rootFlags, db *store.Store, def monit
 		Collection:      collection,
 	}
 	maxID := watermarkBefore
+	var collectionRecords []*resolvedPostRecord
 	for _, rec := range records {
 		if rec == nil {
 			continue
@@ -321,15 +322,7 @@ func runMonitor(cmd *cobra.Command, flags *rootFlags, db *store.Store, def monit
 				result.Results = append(result.Results, item)
 				result.NewResults++
 				if collection != "" {
-					addedCollection, _, err := saveCollectionItem(cmd, db, collection, rec, "saved from monitor "+def.Name, nil)
-					if err != nil {
-						return result, err
-					}
-					if addedCollection {
-						result.CollectionAdded++
-					} else {
-						result.CollectionDuplicates++
-					}
+					collectionRecords = append(collectionRecords, rec)
 				}
 			} else {
 				result.SkippedDuplicates++
@@ -341,6 +334,14 @@ func runMonitor(cmd *cobra.Command, flags *rootFlags, db *store.Store, def monit
 	}
 	result.WatermarkAfter = maxID
 	if !preview {
+		if collection != "" && len(collectionRecords) > 0 {
+			added, duplicates, _, err := saveCollectionItems(cmd, db, collection, collectionRecords, "saved from monitor "+def.Name, nil)
+			if err != nil {
+				return result, err
+			}
+			result.CollectionAdded = added
+			result.CollectionDuplicates = duplicates
+		}
 		if err := updateMonitorWatermark(cmd, db, def.Name, maxID, runID); err != nil {
 			return result, err
 		}

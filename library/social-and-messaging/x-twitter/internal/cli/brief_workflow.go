@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/mvanhorn/printing-press-library/library/social-and-messaging/x-twitter/internal/store"
 	"github.com/spf13/cobra"
@@ -81,16 +82,21 @@ func briefItems(cmd *cobra.Command, flags *rootFlags, dbPath, monitor, collectio
 	if limit <= 0 {
 		limit = 25
 	}
-	db, err := openWorkflowDB(cmd, dbPath)
-	if err != nil {
-		return nil, "", err
-	}
-	defer db.Close()
 	switch {
 	case monitor != "":
+		db, err := openWorkflowDB(cmd, dbPath)
+		if err != nil {
+			return nil, "", err
+		}
+		defer db.Close()
 		items, err := listMonitorResultItems(cmd, db, monitor, since, limit)
 		return items, "local", err
 	case collection != "":
+		db, err := openWorkflowDB(cmd, dbPath)
+		if err != nil {
+			return nil, "", err
+		}
+		defer db.Close()
 		items, err := listCollectionItems(cmd, db, collection, limit, false)
 		return items, "local", err
 	default:
@@ -123,7 +129,7 @@ func listMonitorResultItems(cmd *cobra.Command, db *store.Store, monitor, since 
 		return nil, err
 	} else if ok {
 		q += ` AND seen_at >= ?`
-		args = append(args, start.Format(timeRFC3339SQLite()))
+		args = append(args, start.Format(time.RFC3339))
 	}
 	q += ` ORDER BY seen_at DESC, tweet_id DESC LIMIT ?`
 	args = append(args, limit)
@@ -192,35 +198,51 @@ func buildBrief(source, since string, items []collectionItemSnapshot) briefResul
 	return result
 }
 
-func writeBriefMarkdown(w interface{ Write([]byte) (int, error) }, result briefResult) error {
-	if _, err := fmt.Fprintf(w, "# %s\n\n", result.Title); err != nil {
+func writeBriefMarkdown(w workflowWriter, result briefResult) error {
+	if err := workflowFprintf(w, "# %s\n\n", result.Title); err != nil {
 		return err
 	}
 	if result.Window != "" {
-		fmt.Fprintf(w, "- Window: %s\n", result.Window)
-	}
-	fmt.Fprintf(w, "- Items: %d\n\n", result.ItemCount)
-	if len(result.Highlights) > 0 {
-		fmt.Fprintln(w, "## Highlights")
-		for _, h := range result.Highlights {
-			fmt.Fprintf(w, "- [%s](%s): %s\n", h.TweetID, h.URL, h.Reason)
+		if err := workflowFprintf(w, "- Window: %s\n", result.Window); err != nil {
+			return err
 		}
-		fmt.Fprintln(w)
 	}
-	fmt.Fprintln(w, "## Sources")
+	if err := workflowFprintf(w, "- Items: %d\n\n", result.ItemCount); err != nil {
+		return err
+	}
+	if len(result.Highlights) > 0 {
+		if err := workflowFprintln(w, "## Highlights"); err != nil {
+			return err
+		}
+		for _, h := range result.Highlights {
+			if err := workflowFprintf(w, "- [%s](%s): %s\n", h.TweetID, h.URL, h.Reason); err != nil {
+				return err
+			}
+		}
+		if err := workflowFprintln(w); err != nil {
+			return err
+		}
+	}
+	if err := workflowFprintln(w, "## Sources"); err != nil {
+		return err
+	}
 	for _, item := range result.Items {
-		fmt.Fprintf(w, "### %s\n\n", item.URL)
+		if err := workflowFprintf(w, "### %s\n\n", item.URL); err != nil {
+			return err
+		}
 		if item.Author != nil {
-			fmt.Fprintf(w, "- Author: %s\n", authorDisplay(item.Author))
+			if err := workflowFprintf(w, "- Author: %s\n", authorDisplay(item.Author)); err != nil {
+				return err
+			}
 		}
 		if item.SavedAt != "" {
-			fmt.Fprintf(w, "- Seen: %s\n", item.SavedAt)
+			if err := workflowFprintf(w, "- Seen: %s\n", item.SavedAt); err != nil {
+				return err
+			}
 		}
-		fmt.Fprintf(w, "\n%s\n\n", item.Text)
+		if err := workflowFprintf(w, "\n%s\n\n", item.Text); err != nil {
+			return err
+		}
 	}
 	return nil
-}
-
-func timeRFC3339SQLite() string {
-	return "2006-01-02T15:04:05Z07:00"
 }

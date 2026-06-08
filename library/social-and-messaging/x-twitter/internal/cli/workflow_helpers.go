@@ -40,6 +40,20 @@ type accountSnapshotProfile struct {
 	Raw           map[string]any `json:"raw,omitempty"`
 }
 
+type workflowWriter interface {
+	Write([]byte) (int, error)
+}
+
+func workflowFprintf(w workflowWriter, format string, args ...any) error {
+	_, err := fmt.Fprintf(w, format, args...)
+	return err
+}
+
+func workflowFprintln(w workflowWriter, args ...any) error {
+	_, err := fmt.Fprintln(w, args...)
+	return err
+}
+
 func workflowMeta(command, source string) map[string]any {
 	if source == "" {
 		source = "local"

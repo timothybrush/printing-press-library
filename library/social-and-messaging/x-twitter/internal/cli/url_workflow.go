@@ -64,16 +64,12 @@ func newNovelURLMentionsCmd(flags *rootFlags) *cobra.Command {
 					}
 					result.MonitorCreated = true
 				}
-				for _, rec := range records {
-					if collection != "" {
-						added, _, err := saveCollectionItem(cmd, db, collection, rec, "saved from url mentions "+target, nil)
-						if err != nil {
-							return err
-						}
-						if added {
-							result.CollectionAdded++
-						}
+				if collection != "" && len(records) > 0 {
+					added, _, _, err := saveCollectionItems(cmd, db, collection, records, "saved from url mentions "+target, nil)
+					if err != nil {
+						return err
 					}
+					result.CollectionAdded = added
 				}
 			}
 			for _, rec := range records {

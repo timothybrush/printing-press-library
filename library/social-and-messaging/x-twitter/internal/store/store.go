@@ -574,6 +574,7 @@ func (s *Store) migrate(ctx context.Context) error {
 			source TEXT
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_post_performance_tweet_captured ON post_performance_snapshots(tweet_id, captured_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_post_performance_captured ON post_performance_snapshots(captured_at)`,
 		resourcesFTSCreateSQL,
 		`CREATE TABLE IF NOT EXISTS "account_activity" (
 			"id" TEXT PRIMARY KEY,

@@ -199,14 +199,24 @@ func writeTimelineExport(w io.Writer, result timelineExportResult, format string
 		if title == "" {
 			title = result.Query
 		}
-		fmt.Fprintf(w, "# X timeline export: %s\n\n", title)
-		fmt.Fprintf(w, "- Generated: %s\n- Source: %s\n- Items: %d\n\n", result.GeneratedAt, result.Source, len(result.Items))
+		if err := workflowFprintf(w, "# X timeline export: %s\n\n", title); err != nil {
+			return err
+		}
+		if err := workflowFprintf(w, "- Generated: %s\n- Source: %s\n- Items: %d\n\n", result.GeneratedAt, result.Source, len(result.Items)); err != nil {
+			return err
+		}
 		for _, item := range result.Items {
-			fmt.Fprintf(w, "## %s\n\n", item.URL)
-			if item.Author != nil {
-				fmt.Fprintf(w, "- Author: %s\n", authorDisplay(item.Author))
+			if err := workflowFprintf(w, "## %s\n\n", item.URL); err != nil {
+				return err
 			}
-			fmt.Fprintf(w, "\n%s\n\n", item.Text)
+			if item.Author != nil {
+				if err := workflowFprintf(w, "- Author: %s\n", authorDisplay(item.Author)); err != nil {
+					return err
+				}
+			}
+			if err := workflowFprintf(w, "\n%s\n\n", item.Text); err != nil {
+				return err
+			}
 		}
 		return nil
 	case "json":

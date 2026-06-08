@@ -120,35 +120,55 @@ func buildAccountSnapshot(cmd *cobra.Command, flags *rootFlags, input, dbPath, m
 	return result, nil
 }
 
-func writeAccountSnapshotMarkdown(w interface{ Write([]byte) (int, error) }, result *accountSnapshotResult) error {
+func writeAccountSnapshotMarkdown(w workflowWriter, result *accountSnapshotResult) error {
 	if result == nil || result.Profile == nil {
 		return nil
 	}
 	p := result.Profile
-	fmt.Fprintf(w, "# %s\n\n", p.ProfileURL)
+	if err := workflowFprintf(w, "# %s\n\n", p.ProfileURL); err != nil {
+		return err
+	}
 	if p.Name != "" {
-		fmt.Fprintf(w, "- Name: %s\n", p.Name)
+		if err := workflowFprintf(w, "- Name: %s\n", p.Name); err != nil {
+			return err
+		}
 	}
 	if p.Description != "" {
-		fmt.Fprintf(w, "- Bio: %s\n", p.Description)
+		if err := workflowFprintf(w, "- Bio: %s\n", p.Description); err != nil {
+			return err
+		}
 	}
 	if p.Location != "" {
-		fmt.Fprintf(w, "- Location: %s\n", p.Location)
+		if err := workflowFprintf(w, "- Location: %s\n", p.Location); err != nil {
+			return err
+		}
 	}
 	if p.URL != "" {
-		fmt.Fprintf(w, "- URL: %s\n", p.URL)
+		if err := workflowFprintf(w, "- URL: %s\n", p.URL); err != nil {
+			return err
+		}
 	}
 	if len(p.PublicMetrics) > 0 {
-		fmt.Fprintf(w, "- Metrics: %v\n", p.PublicMetrics)
+		if err := workflowFprintf(w, "- Metrics: %v\n", p.PublicMetrics); err != nil {
+			return err
+		}
 	}
-	fmt.Fprintln(w)
+	if err := workflowFprintln(w); err != nil {
+		return err
+	}
 	if result.PinnedPost != nil {
-		fmt.Fprintf(w, "## Pinned\n\n[%s](%s)\n\n%s\n\n", result.PinnedPost.TweetID, result.PinnedPost.URL, result.PinnedPost.Text)
+		if err := workflowFprintf(w, "## Pinned\n\n[%s](%s)\n\n%s\n\n", result.PinnedPost.TweetID, result.PinnedPost.URL, result.PinnedPost.Text); err != nil {
+			return err
+		}
 	}
 	if len(result.Recent) > 0 {
-		fmt.Fprintln(w, "## Recent Posts")
+		if err := workflowFprintln(w, "## Recent Posts"); err != nil {
+			return err
+		}
 		for _, post := range result.Recent {
-			fmt.Fprintf(w, "### %s\n\n%s\n\n", post.URL, post.Text)
+			if err := workflowFprintf(w, "### %s\n\n%s\n\n", post.URL, post.Text); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

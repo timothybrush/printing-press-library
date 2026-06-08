@@ -101,17 +101,19 @@ func newNovelPerformanceBackfillCmd(flags *rootFlags) *cobra.Command {
 			if label == "" {
 				label = fmt.Sprintf("backfill-%dd", days)
 			}
-			profileInput := account
+			var profile *accountSnapshotProfile
 			if mine {
-				me, err := resolveMeAccount(cmd, flags)
+				var err error
+				profile, err = resolveMeAccount(cmd, flags, dbPath)
 				if err != nil {
 					return classifyAPIError(err, flags)
 				}
-				profileInput = me.ID
-			}
-			profile, err := resolveAccountProfile(cmd, flags, profileInput, dbPath, "live", false)
-			if err != nil {
-				return err
+			} else {
+				var err error
+				profile, err = resolveAccountProfile(cmd, flags, account, dbPath, "live", false)
+				if err != nil {
+					return err
+				}
 			}
 			if limit <= 0 {
 				limit = 100
@@ -239,6 +241,18 @@ func performanceInputRecords(cmd *cobra.Command, flags *rootFlags, dbPath, ids, 
 func savePerformanceSnapshots(cmd *cobra.Command, db *store.Store, records []*resolvedPostRecord, label string) ([]performanceSnapshot, error) {
 	now := generatedAt()
 	var snapshots []performanceSnapshot
+	tx, err := db.DB().BeginTx(cmd.Context(), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	stmt, err := tx.PrepareContext(cmd.Context(),
+		`INSERT INTO post_performance_snapshots(tweet_id, label, captured_at, metrics_json, tweet_json, source_url, post_age_seconds, source)
+		 VALUES(?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
 	for _, rec := range records {
 		if rec == nil {
 			continue
@@ -260,9 +274,7 @@ func savePerformanceSnapshots(cmd *cobra.Command, db *store.Store, records []*re
 		if age != nil {
 			ageArg = *age
 		}
-		if _, err := db.DB().ExecContext(cmd.Context(),
-			`INSERT INTO post_performance_snapshots(tweet_id, label, captured_at, metrics_json, tweet_json, source_url, post_age_seconds, source)
-			 VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
+		if _, err := stmt.ExecContext(cmd.Context(),
 			rec.TweetID, label, now, string(metricsRaw), string(raw), rec.URL, ageArg, rec.Source); err != nil {
 			return nil, err
 		}
@@ -276,10 +288,13 @@ func savePerformanceSnapshots(cmd *cobra.Command, db *store.Store, records []*re
 			Source:         rec.Source,
 		})
 	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return snapshots, nil
 }
 
-func resolveMeAccount(cmd *cobra.Command, flags *rootFlags) (*accountSnapshotProfile, error) {
+func resolveMeAccount(cmd *cobra.Command, flags *rootFlags, dbPath string) (*accountSnapshotProfile, error) {
 	c, err := flags.newClient()
 	if err != nil {
 		return nil, err
@@ -295,6 +310,13 @@ func resolveMeAccount(cmd *cobra.Command, flags *rootFlags) (*accountSnapshotPro
 	}
 	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, err
+	}
+	if dbPath == "" {
+		dbPath = defaultDBPath("x-twitter-pp-cli")
+	}
+	if db, err := store.OpenWithContext(cmd.Context(), dbPath); err == nil {
+		_ = db.UpsertUsers(envelope.Data)
+		_ = db.Close()
 	}
 	return normalizeAccountProfile(envelope.Data, "live", "not_synced", false)
 }
