@@ -2094,6 +2094,62 @@
       }
     },
     {
+      "name": "cloudflare",
+      "category": "cloud",
+      "api": "Cloudflare",
+      "description": "Welcome to Cloudflare's API documentation site.",
+      "search_terms": [
+        "cloudflare",
+        "cloudflare-pp-cli",
+        "Cloudflare API for accounts, zones, DNS, Workers, Pages, R2, Email Routing, tunnels, and Zero Trust operations",
+        "Token recipes and diagnostics",
+        "token doctor --recipe site-launch --account <id>",
+        "Resolve Cloudflare token permission recipes through live permission group IDs and report whether the current token can support the workflow.",
+        "Agent-admin token bootstrap",
+        "agent admin --write-env .env.cloudflare-admin",
+        "Create or guide a token-management bootstrap token that can mint recipe-scoped API tokens for other agents, with redaction and dashboard fallback.",
+        "Project launch and preview",
+        "project launch ./dist --project <name> --account <id> --domain <host>",
+        "Plan or launch a Cloudflare Pages/Workers project, including static output detection, deployment mode choice, and optional domain attachment.",
+        "Domain connect",
+        "domain connect <host> --target pages --project <name> --account <id> --zone <id>",
+        "Connect hostnames to Pages, Workers, tunnels, or R2 with product-specific API calls instead of dashboard spelunking.",
+        "Worker secrets",
+        "worker secret put <name> --script <worker> --account <id> --from-env <ENV>",
+        "Set, list, and delete Worker secrets with redacted output and explicit confirmation gates.",
+        "AI and agent infrastructure bootstrap",
+        "agent memory bootstrap --account <id> --name <name>",
+        "Plan or create Cloudflare resources for AI agents and RAG stacks, including R2, D1, Vectorize, AI Gateway, KV, and Queues.",
+        "Operations diagnostics",
+        "zone doctor --zone <id> --hostname <host>",
+        "Inspect Cloudflare zone, DNS, SSL/settings, Email Routing, and Worker-route readiness through one read-only command.",
+        "Cost and deployment controls",
+        "cost scan --account <id>",
+        "Read billable usage and AI Gateway usage signals, with deployment rollback workflows for Pages production releases."
+      ],
+      "path": "library/cloud/cloudflare",
+      "printer": "cathrynlavery",
+      "printer_name": "Cathryn Lavery",
+      "creator": {
+        "handle": "cathrynlavery",
+        "name": "Cathryn Lavery"
+      },
+      "mcp": {
+        "binary": "cloudflare-pp-mcp",
+        "transports": [
+          "stdio",
+          "http"
+        ],
+        "tool_count": 3106,
+        "public_tool_count": 4,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "CLOUDFLARE_API_TOKEN"
+        ],
+        "mcp_ready": "full"
+      }
+    },
+    {
       "name": "coffee-goat",
       "category": "food-and-dining",
       "api": "Coffee GOAT",
