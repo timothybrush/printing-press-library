@@ -6720,6 +6720,49 @@
       }
     },
     {
+      "name": "motohunt",
+      "category": "other",
+      "api": "MotoHunt",
+      "description": "Search motorcycle and ATV listings from the terminal — with MotoHunt's MSRP/average-price/deal-rating data exposed as",
+      "search_terms": [
+        "motohunt",
+        "motohunt-pp-cli",
+        "Search motorcycle and ATV listings from the terminal — with MotoHunt's MSRP/average-price/deal-rating data exposed as structured fields no other tool gives you.",
+        "Price-research surfacing",
+        "get",
+        "See a listing's MSRP, average listing price, and deal rating as typed fields, not buried prose.",
+        "Offline deal ranking",
+        "deal",
+        "Rank synced listings by how far the asking price sits below the average listing price.",
+        "Saved-search watch + diff",
+        "watch run",
+        "Re-run saved searches and report new listings and price drops since the last run.",
+        "Dual-marketplace parity",
+        "search",
+        "Search motorcycles (motohunt.com) or ATV/UTV/SxS (atvhunt.com) from one binary via --site."
+      ],
+      "path": "library/other/motohunt",
+      "printer": "richardadonnell",
+      "printer_name": "richardadonnell",
+      "creator": {
+        "handle": "richardadonnell",
+        "name": "richardadonnell"
+      },
+      "mcp": {
+        "binary": "motohunt-pp-mcp",
+        "transports": [
+          "stdio",
+          "http"
+        ],
+        "tool_count": 2,
+        "public_tool_count": 2,
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "movie-goat",
       "category": "media-and-entertainment",
       "api": "Movie Goat",
